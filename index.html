@@ -165,14 +165,15 @@
     const ctx = canvas.getContext('2d');
     let texts = [];
     let vhsEffect = false;
+    let backgroundImage = null;
 
-    // Set canvas background color
+    // Function to set background color
     function setBackgroundColor(color) {
         ctx.fillStyle = color;
         ctx.fillRect(0, 0, canvas.width, canvas.height);
     }
 
-    // Image upload functionality
+    // Handle image upload
     document.getElementById('upload-image').addEventListener('change', (event) => {
         const file = event.target.files[0];
         if (file) {
@@ -180,7 +181,8 @@
             reader.onload = function(e) {
                 const img = new Image();
                 img.onload = function() {
-                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height); // Stretch image to fill canvas
+                    backgroundImage = img; // Keep reference to the uploaded image
+                    redrawCanvas(); // Redraw canvas to show the image
                 };
                 img.src = e.target.result;
             };
@@ -308,6 +310,7 @@
     document.getElementById('clear-canvas').addEventListener('click', () => {
         texts = [];
         ctx.clearRect(0, 0, canvas.width, canvas.height);
+        backgroundImage = null; // Reset the background image
         setBackgroundColor('#ffffff'); // Reset to default background color
     });
 
@@ -331,7 +334,10 @@
     function redrawCanvas() {
         const backgroundColor = document.getElementById('background-color').value;
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-        setBackgroundColor(backgroundColor); // Set background color
+        setBackgroundColor(backgroundColor); // Set the default background color
+        if (backgroundImage) {
+            ctx.drawImage(backgroundImage, 0, 0, canvas.width, canvas.height); // Draw the uploaded image if available
+        }
         if (vhsEffect) {
             ctx.filter = 'url(#vhs-effect)';
         } else {
