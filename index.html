@@ -308,16 +308,14 @@
         link.click();
     });
 
-    // Increase/Decrease Quality 
+    // Infinite Increase/Decrease Quality 
     document.getElementById('increase-quality').addEventListener('click', () => {
         imageQuality += 0.1; // Increase quality
-        if (imageQuality > 3) imageQuality = 3; // Limit maximum quality
         alert(`Image quality set to: ${imageQuality.toFixed(1)}x`);
     });
 
     document.getElementById('decrease-quality').addEventListener('click', () => {
         imageQuality -= 0.1; // Decrease quality
-        if (imageQuality < 0.1) imageQuality = 0.1; // Limit minimum quality
         alert(`Image quality set to: ${imageQuality.toFixed(1)}x`);
     });
 
