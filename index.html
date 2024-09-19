@@ -24,7 +24,6 @@
             margin-top: 20px;
             max-width: 100%;
             background-color: #fff;
-            filter: url(#vhs-effect); /* Apply VHS effect */
         }
 
         #controls {
@@ -66,30 +65,33 @@
             justify-content: space-around;
             gap: 10px;
         }
-        
-        /* Effect buttons */
+
         #apply-effect {
             background-color: #ffc107;
         }
-        
+
         #apply-effect:hover {
             background-color: #e0a800;
         }
-        
+
         #clear-canvas {
             background-color: #dc3545;
         }
-        
+
         #clear-canvas:hover {
             background-color: #c82333;
         }
-        
+
         #save-image {
             background-color: #28a745;
         }
-        
+
         #save-image:hover {
             background-color: #218838;
+        }
+
+        .selected {
+            border: 2px dashed blue;
         }
     </style>
     <link href="https://fonts.googleapis.com/css2?family=Creepster&family=Montserrat:wght@700&family=Press+Start+2P&family=Dancing+Script&display=swap" rel="stylesheet">
@@ -98,7 +100,7 @@
 
 <svg width="0" height="0">
     <filter id="vhs-effect">
-        <feTurbulence type="fractalNoise" baseFrequency="0.01" numOctaves="3" result="noise"/>
+        <feTurbulence type="fractalNoise" baseFrequency="0.01" numOctaves="5" result="noise"/>
         <feDisplacementMap in="SourceGraphic" in2="noise" scale="15"/>
     </filter>
 </svg>
@@ -118,6 +120,7 @@
         <option value="Montserrat">Montserrat</option>
         <option value="Press Start 2P">Press Start 2P (Retro Style)</option>
     </select>
+    <button id="clear-text">Clear Text Input</button>
     <button id="add-text">Add Text</button>
     <button id="remove-text">Remove Selected Text</button>
 
@@ -142,7 +145,7 @@
     const ctx = canvas.getContext('2d');
     let texts = [];
 
-    // Text Generation Class
+    // Text Object Class Definition
     class TextObject {
         constructor(text, x, y, color, size, font) {
             this.text = text;
@@ -174,19 +177,7 @@
         }
     }
 
-    // Mouse event handlers
-    canvas.addEventListener('mousedown', (e) => {
-        const mousePos = getMousePos(canvas, e);
-        texts.forEach(textObj => {
-            if (textObj.isCursorOnText(mousePos.x, mousePos.y)) {
-                textObj.selected = !textObj.selected; // Toggle selection
-            } else {
-                textObj.selected = false; // Deselect if clicked outside
-            }
-        });
-        redrawCanvas(); // Redraw the canvas
-    });
-
+    // Mouse Event Handlers
     canvas.addEventListener('click', (e) => {
         const mousePos = getMousePos(canvas, e);
         const text = document.getElementById('text-input').value;
@@ -194,17 +185,36 @@
             const color = document.getElementById('color-input').value;
             const size = document.getElementById('size-input').value;
             const font = document.getElementById('font-select').value;
-            texts.push(new TextObject(text, mousePos.x, mousePos.y, color, Number(size), font)); // Add text at mouse position
-            document.getElementById('text-input').value = ''; // Clear the input
-            redrawCanvas(); // Redraw the canvas
+            texts.push(new TextObject(text, mousePos.x, mousePos.y, color, Number(size), font)); // Add text to canvas
+            document.getElementById('text-input').value = ''; // Clear text input
+            redrawCanvas(); // Redraw canvas with new text
         }
     });
 
-    document.getElementById('remove-text').addEventListener('click', () => {
-        texts = texts.filter(text => !text.selected); // Remove selected text
-        redrawCanvas();
+    canvas.addEventListener('mousedown', (e) => {
+        const mousePos = getMousePos(canvas, e);
+        texts.forEach(textObj => {
+            if (textObj.isCursorOnText(mousePos.x, mousePos.y)) {
+                textObj.selected = !textObj.selected; // Toggle selection on click
+            } else {
+                textObj.selected = false; // Deselect if clicked outside
+            }
+        });
+        redrawCanvas(); // Redraw canvas after selection
     });
 
+    // Clear text input
+    document.getElementById('clear-text').addEventListener('click', () => {
+        document.getElementById('text-input').value = '';
+    });
+
+    // Remove Selected Text
+    document.getElementById('remove-text').addEventListener('click', () => {
+        texts = texts.filter(text => !text.selected); // Remove selected text
+        redrawCanvas(); // Redraw canvas after removal
+    });
+
+    // Apply Effects
     document.getElementById('apply-effect').addEventListener('click', () => {
         const effect = document.getElementById('effect-select').value;
         applyEffect(effect);
@@ -229,11 +239,13 @@
         ctx.filter = 'none'; // Reset filter after applying
     }
 
+    // Clear Canvas
     document.getElementById('clear-canvas').addEventListener('click', () => {
         texts = [];
         ctx.clearRect(0, 0, canvas.width, canvas.height);
     });
 
+    // Save Image
     document.getElementById('save-image').addEventListener('click', () => {
         const link = document.createElement('a');
         link.download = 'edited-image.png';
@@ -241,6 +253,7 @@
         link.click();
     });
 
+    // Helper Functions
     function getMousePos(canvas, evt) {
         const rect = canvas.getBoundingClientRect();
         return {
