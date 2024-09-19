@@ -12,11 +12,12 @@
             align-items: center;
             margin: 0;
             padding: 20px;
-            background-color: #f4f4f4;
+            background-color: #f0f4f8;
         }
 
         h1 {
             color: #333;
+            margin-bottom: 20px;
         }
 
         canvas {
@@ -24,25 +25,26 @@
             margin-top: 20px;
             max-width: 100%;
             background-color: #fff;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
         }
 
         #controls {
             display: flex;
             flex-direction: column;
             gap: 10px;
-            margin-bottom: 20px;
             background: white;
             padding: 20px;
             border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            width: 100%;
+            max-width: 400px;
         }
 
         input[type="text"], input[type="color"], input[type="range"], select {
             padding: 10px;
             border: 1px solid #ccc;
             border-radius: 5px;
-            width: 300px;
-            max-width: 100%;
+            width: 100%;
         }
 
         button {
@@ -53,84 +55,59 @@
             background-color: #007bff;
             font-size: 16px;
             cursor: pointer;
-            transition: background-color 0.3s;
+            transition: background-color 0.3s, transform 0.2s;
         }
 
         button:hover {
             background-color: #0056b3;
+            transform: translateY(-1px);
+        }
+
+        label {
+            font-weight: bold;
+            margin-top: 10px;
         }
 
         .effect-select {
             display: flex;
-            justify-content: space-around;
+            justify-content: space-between;
             gap: 10px;
         }
 
+        /* Styles for specific buttons */
         #apply-effect {
             background-color: #ffc107;
-        }
-
-        #apply-effect:hover {
-            background-color: #e0a800;
         }
 
         #clear-canvas {
             background-color: #dc3545;
         }
 
-        #clear-canvas:hover {
-            background-color: #c82333;
-        }
-
         #save-image {
             background-color: #28a745;
-        }
-
-        #save-image:hover {
-            background-color: #218838;
         }
 
         #upload-image {
             background-color: #17a2b8;
         }
-
-        #upload-image:hover {
-            background-color: #138496;
-        }
-
-        .selected {
-            border: 2px dashed blue;
-        }
-
-        #vhs-toggle {
-            margin-top: 10px;
-        }
     </style>
-    <link href="https://fonts.googleapis.com/css2?family=Creepster&family=Montserrat:wght@700&family=Press+Start+2P&family=Dancing+Script&display=swap" rel="stylesheet">
 </head>
 <body>
-
-<svg width="0" height="0">
-    <filter id="vhs-effect">
-        <feTurbulence type="fractalNoise" baseFrequency="0.01" numOctaves="5" result="noise"/>
-        <feDisplacementMap in="SourceGraphic" in2="noise" scale="15"/>
-    </filter>
-</svg>
 
 <h1>Enhanced Image Editor</h1>
 
 <div id="controls">
     <input type="text" id="text-input" placeholder="Enter your text here">
-    <input type="color" id="color-input" value="#000000"> <!-- For text color -->
+    <input type="color" id="color-input" value="#000000">
     <label for="size-input">Text Size:</label>
-    <input type="range" id="size-input" min="10" max="100" value="30"> <!-- For text size -->
+    <input type="range" id="size-input" min="10" max="100" value="30">
     <label for="font-select">Font:</label>
     <select id="font-select">
         <option value="Arial">Arial</option>
-        <option value="Dancing Script">Dancing Script (Cursive)</option>
-        <option value="Creepster">Creepster (VHS Style)</option>
+        <option value="Dancing Script">Dancing Script</option>
+        <option value="Creepster">Creepster</option>
         <option value="Montserrat">Montserrat</option>
-        <option value="Press Start 2P">Press Start 2P (Retro Style)</option>
+        <option value="Press Start 2P">Press Start 2P</option>
     </select>
     <button id="clear-text">Clear Text Input</button>
     <button id="add-text">Add Text</button>
@@ -166,8 +143,9 @@
     let texts = [];
     let vhsEffect = false;
     let backgroundImage = null;
+    let backgroundColor = '#ffffff'; // Default background color
 
-    // Function to set background color
+    // Function to set the canvas background color
     function setBackgroundColor(color) {
         ctx.fillStyle = color;
         ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -240,9 +218,9 @@
             const color = document.getElementById('color-input').value;
             const size = document.getElementById('size-input').value;
             const font = document.getElementById('font-select').value;
-            texts.push(new TextObject(text, mousePos.x, mousePos.y, color, Number(size), font)); // Add text to canvas
-            document.getElementById('text-input').value = ''; // Clear text input
-            redrawCanvas(); // Redraw canvas with new text
+            texts.push(new TextObject(text, mousePos.x, mousePos.y, color, Number(size), font));
+            document.getElementById('text-input').value = '';
+            redrawCanvas();
         }
     });
 
@@ -250,12 +228,12 @@
         const mousePos = getMousePos(canvas, e);
         texts.forEach(textObj => {
             if (textObj.isCursorOnText(mousePos.x, mousePos.y)) {
-                textObj.selected = !textObj.selected; // Toggle selection on click
+                textObj.selected = !textObj.selected;
             } else {
-                textObj.selected = false; // Deselect if clicked outside
+                textObj.selected = false;
             }
         });
-        redrawCanvas(); // Redraw canvas after selection
+        redrawCanvas();
     });
 
     // Clear text input
@@ -265,8 +243,8 @@
 
     // Remove Selected Text
     document.getElementById('remove-text').addEventListener('click', () => {
-        texts = texts.filter(text => !text.selected); // Remove selected text
-        redrawCanvas(); // Redraw canvas after removal
+        texts = texts.filter(text => !text.selected);
+        redrawCanvas();
     });
 
     // Apply Effects
@@ -291,34 +269,34 @@
                 break;
         }
         redrawCanvas();
-        ctx.filter = 'none'; // Reset filter after applying
+        ctx.filter = 'none'; 
     }
 
     // Toggle VHS Effect
     document.getElementById('vhs-toggle').addEventListener('change', (e) => {
         vhsEffect = e.target.checked;
-        redrawCanvas(); // Redraw to apply/remove VHS effect
+        redrawCanvas();
     });
 
     // Set background color
     document.getElementById('background-color').addEventListener('change', (e) => {
-        setBackgroundColor(e.target.value);
+        backgroundColor = e.target.value;
         redrawCanvas();
     });
 
     // Clear Canvas
     document.getElementById('clear-canvas').addEventListener('click', () => {
         texts = [];
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        backgroundImage = null; // Reset the background image
-        setBackgroundColor('#ffffff'); // Reset to default background color
+        backgroundImage = null;
+        setBackgroundColor('#ffffff');
+        redrawCanvas();
     });
 
     // Save Image
     document.getElementById('save-image').addEventListener('click', () => {
         const link = document.createElement('a');
         link.download = 'edited-image.png';
-        link.href = saveCanvas(); // Save using the higher quality method
+        link.href = saveCanvas();
         link.click();
     });
 
@@ -332,16 +310,13 @@
     }
 
     function redrawCanvas() {
-        const backgroundColor = document.getElementById('background-color').value;
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-        setBackgroundColor(backgroundColor); // Set the default background color
+        setBackgroundColor(backgroundColor); // Reset background color
         if (backgroundImage) {
-            ctx.drawImage(backgroundImage, 0, 0, canvas.width, canvas.height); // Draw the uploaded image if available
+            ctx.drawImage(backgroundImage, 0, 0, canvas.width, canvas.height);
         }
         if (vhsEffect) {
             ctx.filter = 'url(#vhs-effect)';
-        } else {
-            ctx.filter = 'none';
         }
         texts.forEach(textObj => textObj.draw());
         ctx.filter = 'none'; // Reset filter after drawing
