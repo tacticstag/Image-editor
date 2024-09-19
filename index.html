@@ -22,7 +22,6 @@
             margin-top: 20px;
             max-width: 100%;
             background-color: #fff;
-            filter: url(#vhs-effect); /* Apply VHS effect */
         }
         #controls {
             display: flex;
@@ -157,108 +156,116 @@
         
         isCursorOnText(mouseX, mouseY) {
             return mouseX >= this.x - 5 && mouseX <= this.x + ctx.measureText(this.text).width + 5 &&
-                   mouseY >= this.y - this.size && mouseY <= this.y;
+                   mouseY >= this.y - this.size && mouseY <= this.y + this.size + 5; // Increased the y-range to include the selection rectangle
         }
+        
+        move(x, y) {
+          this.x = x; // Update the text's position
+          this.y = y; // Update the text's position
+          redrawCanvas(); // Redraw the canvas after moving the text
+      }
+      
+      getMousePosition() {
+          return { x:this.x, y:this.y };
+      }
     }
 
     let draggingText = null;
-    let dragOffset = { x: 0, y: 0 };
 
     // Mouse event handlers
     canvas.addEventListener('mousedown', (e) => {
-        const mousePos = getMousePos(canvas, e);
-        texts.forEach(textObj => {
-            if (textObj.isCursorOnText(mousePos.x, mousePos.y)) {
-                draggingText = textObj;
-                dragOffset.x = mousePos.x - textObj.x;
-                dragOffset.y = mousePos.y - textObj.y;
-                textObj.selected = true; // Highlight the selected text
-            } else {
-                textObj.selected = false; // Deselect other texts
-            }
-        });
-        redrawCanvas();
-    });
-
-    canvas.addEventListener('mouseup', () => {
-        draggingText = null;
+      const mousePos = getMousePos(canvas, e);
+      texts.forEach(textObj => {
+          if (textObj.isCursorOnText(mousePos.x, mousePos.y)) {
+              draggingText = textObj; // Set the current text as the dragging object
+              dragOffset.x = mousePos.x - textObj.x; // Calculate the offset for dragging
+              dragOffset.y = mousePos.y - textObj.y; // Calculate the offset for dragging
+              textObj.selected = true; // Highlight the selected text
+          } else {
+              textObj.selected = false; // Deselect other texts
+          }
+      });
+      redrawCanvas(); // Redraw the canvas after mousedown event
     });
 
     canvas.addEventListener('mousemove', (e) => {
-        if (draggingText) {
-            const mousePos = getMousePos(canvas, e);
-            draggingText.x = mousePos.x - dragOffset.x;
-            draggingText.y = mousePos.y - dragOffset.y;
-            redrawCanvas();
-        }
+      if (draggingText) {
+          const mousePos = getMousePos(canvas, e);
+          draggingText.move(mousePos.x - dragOffset.x, mousePos.y - dragOffset.y); // Move the dragging text based on mouse movement
+          redrawCanvas(); // Redraw the canvas after mouse movement event
+      }
+    });
+
+    canvas.addEventListener('mouseup', () => {
+      draggingText = null; // Reset the dragging object after mouseup event
+      redrawCanvas(); // Redraw the canvas after mouseup event
     });
 
     function getMousePos(canvas, evt) {
-        const rect = canvas.getBoundingClientRect();
-        return {
-            x: evt.clientX - rect.left,
-            y: evt.clientY - rect.top
-        };
+      const rect = canvas.getBoundingClientRect();
+      return { x : evt.clientX - rect.left, y : evt.clientY - rect.top };
     }
 
     document.getElementById('add-text').addEventListener('click', () => {
-        const text = document.getElementById('text-input').value;
-        const color = document.getElementById('color-input').value;
-        const size = document.getElementById('size-input').value;
-        const font = document.getElementById('font-select').value;
-        if (text) {
-            texts.push(new TextObject(text, 50, 50, color, Number(size), font));
-            document.getElementById('text-input').value = ''; // Clear the input
-            redrawCanvas();
-        }
+      const text = document.getElementById('text-input').value;
+      const color = document.getElementById('color-input').value;
+      const size = document.getElementById('size-input').value;
+      const font = document.getElementById('font-select').value;
+      if (text) {
+          texts.push(new TextObject(text, 50, 50, color, Number(size), font));
+          document.getElementById('text-input').value = ''; // Clear the input
+          redrawCanvas();
+      }
     });
 
     document.getElementById('remove-text').addEventListener('click', () => {
-        texts = texts.filter(text => !text.selected); // Remove selected text
-        redrawCanvas();
+      texts = texts.filter(text => !text.selected); // Remove selected text
+      redrawCanvas();
     });
 
     document.getElementById('apply-effect').addEventListener('click', () => {
-        const effect = document.getElementById('effect-select').value;
-        applyEffect(effect);
+      const effect = document.getElementById('effect-select').value;
+      applyEffect(effect);
     });
 
     function applyEffect(effect) {
-        switch(effect) {
-            case 'blackwhite':
-                ctx.filter = 'grayscale(100%)';
-                break;
-            case 'sepia':
-                ctx.filter = 'sepia(100%)';
-                break;
-            case 'invert':
-                ctx.filter = 'invert(100%)';
-                break;
-            default:
-                ctx.filter = 'none';
-                break;
-        }
-        redrawCanvas();
-        ctx.filter = 'none'; // Reset filter after applying
+      switch(effect) {
+          case 'blackwhite':
+              ctx.filter = 'grayscale(100%)';
+              break;
+          case 'sepia':
+              ctx.filter = 'sepia(100%)';
+              break;
+          case 'invert':
+              ctx.filter = 'invert(100%)';
+              break;
+          default:
+              ctx.filter = 'none';
+              break;
+      }
+      redrawCanvas();
+      ctx.filter = 'none'; // Reset filter after applying
     }
 
     document.getElementById('clear-canvas').addEventListener('click', () => {
-        texts = [];
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
+      texts = [];
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
     });
 
     document.getElementById('save-image').addEventListener('click', () => {
-        const link = document.createElement('a');
-        link.download = 'edited-image.png';
-        link.href = canvas.toDataURL();
-        link.click();
+      const link = document.createElement('a');
+      link.download = 'edited-image.png';
+      link.href = canvas.toDataURL();
+      link.click();
     });
 
     function redrawCanvas() {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        texts.forEach(textObj => textObj.draw());
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      texts.forEach(textObj => textObj.draw());
     }
+
 </script>
 
 </body>
 </html>
+
