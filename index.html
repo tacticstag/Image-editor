@@ -317,7 +317,7 @@
 
     document.getElementById('decrease-quality').addEventListener('click', () => {
         imageQuality -= 0.1; // Decrease quality
-        if (imageQuality < 1) imageQuality = 1; // Limit minimum quality
+        if (imageQuality < 0.1) imageQuality = 0.1; // Limit minimum quality
         alert(`Image quality set to: ${imageQuality.toFixed(1)}x`);
     });
 
