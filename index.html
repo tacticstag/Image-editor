@@ -1,4 +1,4 @@
-<!D<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -22,6 +22,7 @@
             margin-top: 20px;
             max-width: 100%;
             background-color: #fff;
+            filter: url(#vhs-effect); /* Apply VHS effect */
         }
         #controls {
             display: flex;
@@ -78,9 +79,16 @@
             background-color: #218838;
         }
     </style>
-    <link href="https://fonts.googleapis.com/css2?family=Creepster&family=Montserrat:wght@700&family=Press+Start+2P&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Creepster&family=Montserrat:wght@700&family=Press+Start+2P&family=Dancing+Script&display=swap" rel="stylesheet">
 </head>
 <body>
+
+<svg width="0" height="0">
+    <filter id="vhs-effect">
+        <feTurbulence type="fractalNoise" baseFrequency="0.01" numOctaves="3" result="noise"/>
+        <feDisplacementMap in="SourceGraphic" in2="noise" scale="15" />
+    </filter>
+</svg>
 
 <h1>Enhanced Image Editor</h1>
 
@@ -92,6 +100,7 @@
     <label for="font-select">Font:</label>
     <select id="font-select">
         <option value="Arial">Arial</option>
+        <option value="Dancing Script">Dancing Script (Cursive)</option>
         <option value="Creepster">Creepster (VHS Style)</option>
         <option value="Montserrat">Montserrat</option>
         <option value="Press Start 2P">Press Start 2P (Retro Style)</option>
@@ -145,8 +154,13 @@
             ctx.strokeStyle = 'rgba(0, 123, 255, 0.5)';
             ctx.strokeRect(this.x - 5, this.y - this.size + 10, ctx.measureText(this.text).width + 10, this.size + 5);
         }
+        
+        isCursorOnText(mouseX, mouseY) {
+            return mouseX >= this.x - 5 && mouseX <= this.x + ctx.measureText(this.text).width + 5 &&
+                   mouseY >= this.y - this.size && mouseY <= this.y;
+        }
     }
-    
+
     let draggingText = null;
     let dragOffset = { x: 0, y: 0 };
 
@@ -154,8 +168,7 @@
     canvas.addEventListener('mousedown', (e) => {
         const mousePos = getMousePos(canvas, e);
         texts.forEach(textObj => {
-            if (mousePos.x >= textObj.x - 5 && mousePos.x <= textObj.x + ctx.measureText(textObj.text).width + 5 &&
-                mousePos.y >= textObj.y - textObj.size && mousePos.y <= textObj.y) {
+            if (textObj.isCursorOnText(mousePos.x, mousePos.y)) {
                 draggingText = textObj;
                 dragOffset.x = mousePos.x - textObj.x;
                 dragOffset.y = mousePos.y - textObj.y;
