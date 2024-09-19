@@ -29,7 +29,7 @@
             gap: 10px;
             margin-bottom: 20px;
         }
-        input[type="file"], input[type="text"], input[type="color"], input[type="range"] {
+        input[type="text"], input[type="color"], input[type="range"], select {
             padding: 10px;
             border: 1px solid #ccc;
             border-radius: 5px;
@@ -62,6 +62,7 @@
             background-color: #c82333;
         }
     </style>
+    <link href="https://fonts.googleapis.com/css2?family=Creepster&family=Montserrat:wght@700&family=Press+Start+2P&display=swap" rel="stylesheet">
 </head>
 <body>
 
@@ -72,8 +73,17 @@
     <input type="color" id="color-input" value="#000000"> <!-- For text color -->
     <label for="size-input">Text Size:</label>
     <input type="range" id="size-input" min="10" max="100" value="30"> <!-- For text size -->
+    <label for="font-select">Font:</label>
+    <select id="font-select">
+        <option value="Arial">Arial</option>
+        <option value="Creepster">Creepster (VHS Style)</option>
+        <option value="Montserrat">Montserrat</option>
+        <option value="Press Start 2P">Press Start 2P (Retro Style)</option>
+    </select>
     <button id="add-text">Add Text</button>
     <button id="remove-text">Remove Selected Text</button>
+    <button id="add-bg">Add Background Behind Text</button>
+    <input type="color" id="bg-color-input" value="#ffffff"> <!-- Background color for text -->
     <input type="color" id="gradient-color1" value="#ff0000"> <!-- Gradient color 1 -->
     <input type="color" id="gradient-color2" value="#0000ff"> <!-- Gradient color 2 -->
     <button id="add-gradient">Add Gradient Text</button>
@@ -91,9 +101,12 @@
     const ctx = canvas.getContext('2d');
     const textInput = document.getElementById('text-input');
     const colorInput = document.getElementById('color-input');
+    const sizeInput = document.getElementById('size-input');
+    const fontSelect = document.getElementById('font-select');
     const addTextButton = document.getElementById('add-text');
     const removeTextButton = document.getElementById('remove-text');
-    const sizeInput = document.getElementById('size-input');
+    const addBgButton = document.getElementById('add-bg');
+    const bgColorInput = document.getElementById('bg-color-input');
     const addGradientButton = document.getElementById('add-gradient');
     const clearButton = document.getElementById('clear-canvas');
     const saveButton = document.getElementById('save-image');
@@ -146,9 +159,18 @@
         const text = textInput.value;
         const color = colorInput.value;
         const size = sizeInput.value;
+        const font = fontSelect.value;
         if (text) {
-            texts.push({ text, x: 50, y: 50, color, size: Number(size) });
+            texts.push({ text, x: 50, y: 50, color, size: Number(size), font });
             textInput.value = ''; // Clear the input
+            redrawCanvas();
+        }
+    });
+
+    addBgButton.addEventListener('click', () => {
+        if (dragIndex > -1) {
+            const bgColor = bgColorInput.value;
+            texts[dragIndex].bgColor = bgColor;
             redrawCanvas();
         }
     });
@@ -158,37 +180,27 @@
         const color1 = document.getElementById('gradient-color1').value;
         const color2 = document.getElementById('gradient-color2').value;
         const size = sizeInput.value;
+        const font = fontSelect.value;
         if (text) {
             const gradient = ctx.createLinearGradient(50, 50, 200, 50);
             gradient.addColorStop(0, color1);
             gradient.addColorStop(1, color2);
-            const gradientText = { text, x: 50, y: 100, gradient, size: Number(size) };
+            const gradientText = { text, x: 50, y: 100, gradient, size: Number(size), font };
             texts.push(gradientText);
             textInput.value = ''; // Clear the input
             redrawCanvas();
         }
     });
 
-    addBgGradientButton.addEventListener('click', () => {
-        const color1 = bgGradientColor1.value;
-        const color2 = bgGradientColor2.value;
-        const bgGradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
-        bgGradient.addColorStop(0, color1);
-        bgGradient.addColorStop(1, color2);
-        ctx.fillStyle = bgGradient;
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        redrawCanvas();
-    });
-
     function redrawCanvas() {
         ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear the canvas first
         texts.forEach(textObj => {
-            if (textObj.gradient) {
-                ctx.fillStyle = textObj.gradient;
-            } else {
-                ctx.fillStyle = textObj.color;
+            if (textObj.bgColor) {
+                ctx.fillStyle = textObj.bgColor;
+                ctx.fillRect(textObj.x - 5, textObj.y - textObj.size + 10, ctx.measureText(textObj.text).width + 10, textObj.size + 5); // background behind text
             }
-            ctx.font = `${textObj.size}px Arial`;
+            ctx.fillStyle = textObj.gradient ? textObj.gradient : textObj.color;
+            ctx.font = `${textObj.size}px ${textObj.font}`;
             ctx.fillText(textObj.text, textObj.x, textObj.y); // Draw the text on the canvas
         });
     }
