@@ -93,6 +93,10 @@
         .selected {
             border: 2px dashed blue;
         }
+
+        #vhs-toggle {
+            margin-top: 10px;
+        }
     </style>
     <link href="https://fonts.googleapis.com/css2?family=Creepster&family=Montserrat:wght@700&family=Press+Start+2P&family=Dancing+Script&display=swap" rel="stylesheet">
 </head>
@@ -133,6 +137,10 @@
             <option value="invert">Invert Colors</option>
         </select>
     </div>
+
+    <label>
+        <input type="checkbox" id="vhs-toggle"> Toggle VHS Effect
+    </label>
     
     <button id="clear-canvas">Clear Canvas</button>
     <button id="save-image">Save Image</button>
@@ -144,6 +152,7 @@
     const canvas = document.getElementById('canvas');
     const ctx = canvas.getContext('2d');
     let texts = [];
+    let vhsEffect = false;
 
     // Text Object Class Definition
     class TextObject {
@@ -175,6 +184,16 @@
             return mouseX >= this.x - 5 && mouseX <= this.x + ctx.measureText(this.text).width + 5 &&
                    mouseY >= this.y - this.size && mouseY <= this.y;
         }
+    }
+
+    function saveCanvas() {
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const tmpCanvas = document.createElement('canvas');
+        tmpCanvas.width = canvas.width;
+        tmpCanvas.height = canvas.height;
+        const tmpCtx = tmpCanvas.getContext('2d');
+        tmpCtx.putImageData(imageData, 0, 0);
+        return tmpCanvas.toDataURL('image/png');
     }
 
     // Mouse Event Handlers
@@ -239,6 +258,12 @@
         ctx.filter = 'none'; // Reset filter after applying
     }
 
+    // Toggle VHS Effect
+    document.getElementById('vhs-toggle').addEventListener('change', (e) => {
+        vhsEffect = e.target.checked;
+        redrawCanvas(); // Redraw to apply/remove VHS effect
+    });
+
     // Clear Canvas
     document.getElementById('clear-canvas').addEventListener('click', () => {
         texts = [];
@@ -249,7 +274,7 @@
     document.getElementById('save-image').addEventListener('click', () => {
         const link = document.createElement('a');
         link.download = 'edited-image.png';
-        link.href = canvas.toDataURL();
+        link.href = saveCanvas(); // Save using the higher quality method
         link.click();
     });
 
@@ -264,7 +289,13 @@
 
     function redrawCanvas() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
+        if (vhsEffect) {
+            ctx.filter = 'url(#vhs-effect)';
+        } else {
+            ctx.filter = 'none';
+        }
         texts.forEach(textObj => textObj.draw());
+        ctx.filter = 'none'; // Reset filter after drawing
     }
 </script>
 
