@@ -14,15 +14,19 @@
             padding: 20px;
             background-color: #f4f4f4;
         }
+
         h1 {
             color: #333;
         }
+
         canvas {
             border: 1px solid #cccccc;
             margin-top: 20px;
             max-width: 100%;
             background-color: #fff;
+            filter: url(#vhs-effect); /* Apply VHS effect */
         }
+
         #controls {
             display: flex;
             flex-direction: column;
@@ -33,6 +37,7 @@
             border-radius: 8px;
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
         }
+
         input[type="text"], input[type="color"], input[type="range"], select {
             padding: 10px;
             border: 1px solid #ccc;
@@ -40,6 +45,7 @@
             width: 300px;
             max-width: 100%;
         }
+
         button {
             padding: 10px;
             border: none;
@@ -50,30 +56,38 @@
             cursor: pointer;
             transition: background-color 0.3s;
         }
+
         button:hover {
             background-color: #0056b3;
         }
+
         .effect-select {
             display: flex;
             justify-content: space-around;
             gap: 10px;
         }
+        
         /* Effect buttons */
         #apply-effect {
             background-color: #ffc107;
         }
+        
         #apply-effect:hover {
             background-color: #e0a800;
         }
+        
         #clear-canvas {
             background-color: #dc3545;
         }
+        
         #clear-canvas:hover {
             background-color: #c82333;
         }
+        
         #save-image {
             background-color: #28a745;
         }
+        
         #save-image:hover {
             background-color: #218838;
         }
@@ -85,7 +99,7 @@
 <svg width="0" height="0">
     <filter id="vhs-effect">
         <feTurbulence type="fractalNoise" baseFrequency="0.01" numOctaves="3" result="noise"/>
-        <feDisplacementMap in="SourceGraphic" in2="noise" scale="15" />
+        <feDisplacementMap in="SourceGraphic" in2="noise" scale="15"/>
     </filter>
 </svg>
 
@@ -116,7 +130,7 @@
             <option value="invert">Invert Colors</option>
         </select>
     </div>
-  
+    
     <button id="clear-canvas">Clear Canvas</button>
     <button id="save-image">Save Image</button>
 </div>
@@ -127,7 +141,7 @@
     const canvas = document.getElementById('canvas');
     const ctx = canvas.getContext('2d');
     let texts = [];
-    
+
     // Text Generation Class
     class TextObject {
         constructor(text, x, y, color, size, font) {
@@ -156,116 +170,90 @@
         
         isCursorOnText(mouseX, mouseY) {
             return mouseX >= this.x - 5 && mouseX <= this.x + ctx.measureText(this.text).width + 5 &&
-                   mouseY >= this.y - this.size && mouseY <= this.y + this.size + 5; // Increased the y-range to include the selection rectangle
+                   mouseY >= this.y - this.size && mouseY <= this.y;
         }
-        
-        move(x, y) {
-          this.x = x; // Update the text's position
-          this.y = y; // Update the text's position
-          redrawCanvas(); // Redraw the canvas after moving the text
-      }
-      
-      getMousePosition() {
-          return { x:this.x, y:this.y };
-      }
     }
-
-    let draggingText = null;
 
     // Mouse event handlers
     canvas.addEventListener('mousedown', (e) => {
-      const mousePos = getMousePos(canvas, e);
-      texts.forEach(textObj => {
-          if (textObj.isCursorOnText(mousePos.x, mousePos.y)) {
-              draggingText = textObj; // Set the current text as the dragging object
-              dragOffset.x = mousePos.x - textObj.x; // Calculate the offset for dragging
-              dragOffset.y = mousePos.y - textObj.y; // Calculate the offset for dragging
-              textObj.selected = true; // Highlight the selected text
-          } else {
-              textObj.selected = false; // Deselect other texts
-          }
-      });
-      redrawCanvas(); // Redraw the canvas after mousedown event
+        const mousePos = getMousePos(canvas, e);
+        texts.forEach(textObj => {
+            if (textObj.isCursorOnText(mousePos.x, mousePos.y)) {
+                textObj.selected = !textObj.selected; // Toggle selection
+            } else {
+                textObj.selected = false; // Deselect if clicked outside
+            }
+        });
+        redrawCanvas(); // Redraw the canvas
     });
 
-    canvas.addEventListener('mousemove', (e) => {
-      if (draggingText) {
-          const mousePos = getMousePos(canvas, e);
-          draggingText.move(mousePos.x - dragOffset.x, mousePos.y - dragOffset.y); // Move the dragging text based on mouse movement
-          redrawCanvas(); // Redraw the canvas after mouse movement event
-      }
-    });
-
-    canvas.addEventListener('mouseup', () => {
-      draggingText = null; // Reset the dragging object after mouseup event
-      redrawCanvas(); // Redraw the canvas after mouseup event
-    });
-
-    function getMousePos(canvas, evt) {
-      const rect = canvas.getBoundingClientRect();
-      return { x : evt.clientX - rect.left, y : evt.clientY - rect.top };
-    }
-
-    document.getElementById('add-text').addEventListener('click', () => {
-      const text = document.getElementById('text-input').value;
-      const color = document.getElementById('color-input').value;
-      const size = document.getElementById('size-input').value;
-      const font = document.getElementById('font-select').value;
-      if (text) {
-          texts.push(new TextObject(text, 50, 50, color, Number(size), font));
-          document.getElementById('text-input').value = ''; // Clear the input
-          redrawCanvas();
-      }
+    canvas.addEventListener('click', (e) => {
+        const mousePos = getMousePos(canvas, e);
+        const text = document.getElementById('text-input').value;
+        if (text) {
+            const color = document.getElementById('color-input').value;
+            const size = document.getElementById('size-input').value;
+            const font = document.getElementById('font-select').value;
+            texts.push(new TextObject(text, mousePos.x, mousePos.y, color, Number(size), font)); // Add text at mouse position
+            document.getElementById('text-input').value = ''; // Clear the input
+            redrawCanvas(); // Redraw the canvas
+        }
     });
 
     document.getElementById('remove-text').addEventListener('click', () => {
-      texts = texts.filter(text => !text.selected); // Remove selected text
-      redrawCanvas();
+        texts = texts.filter(text => !text.selected); // Remove selected text
+        redrawCanvas();
     });
 
     document.getElementById('apply-effect').addEventListener('click', () => {
-      const effect = document.getElementById('effect-select').value;
-      applyEffect(effect);
+        const effect = document.getElementById('effect-select').value;
+        applyEffect(effect);
     });
 
     function applyEffect(effect) {
-      switch(effect) {
-          case 'blackwhite':
-              ctx.filter = 'grayscale(100%)';
-              break;
-          case 'sepia':
-              ctx.filter = 'sepia(100%)';
-              break;
-          case 'invert':
-              ctx.filter = 'invert(100%)';
-              break;
-          default:
-              ctx.filter = 'none';
-              break;
-      }
-      redrawCanvas();
-      ctx.filter = 'none'; // Reset filter after applying
+        switch(effect) {
+            case 'blackwhite':
+                ctx.filter = 'grayscale(100%)';
+                break;
+            case 'sepia':
+                ctx.filter = 'sepia(100%)';
+                break;
+            case 'invert':
+                ctx.filter = 'invert(100%)';
+                break;
+            default:
+                ctx.filter = 'none';
+                break;
+        }
+        redrawCanvas();
+        ctx.filter = 'none'; // Reset filter after applying
     }
 
     document.getElementById('clear-canvas').addEventListener('click', () => {
-      texts = [];
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
+        texts = [];
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
     });
 
     document.getElementById('save-image').addEventListener('click', () => {
-      const link = document.createElement('a');
-      link.download = 'edited-image.png';
-      link.href = canvas.toDataURL();
-      link.click();
+        const link = document.createElement('a');
+        link.download = 'edited-image.png';
+        link.href = canvas.toDataURL();
+        link.click();
     });
 
-    function redrawCanvas() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      texts.forEach(textObj => textObj.draw());
+    function getMousePos(canvas, evt) {
+        const rect = canvas.getBoundingClientRect();
+        return {
+            x: evt.clientX - rect.left,
+            y: evt.clientY - rect.top
+        };
     }
 
+    function redrawCanvas() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        texts.forEach(textObj => textObj.draw());
+    }
 </script>
 
 </body>
 </html>
-
