@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Editor</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        h1 {
+            color: #333;
+        }
+        canvas {
+            border: 1px solid #cccccc;
+            margin-top: 20px;
+            max-width: 100%;
+            background-color: #fff;
+        }
+        #controls {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        input[type="file"], input[type="text"] {
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            width: 300px;
+            max-width: 100%;
+        }
+        button {
+            padding: 10px;
+            border: none;
+            border-radius: 5px;
+            color: #fff;
+            background-color: #007bff;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        #save-image {
+            background-color: #28a745;
+        }
+        #save-image:hover {
+            background-color: #218838;
+        }
+        #clear-canvas {
+            background-color: #dc3545;
+        }
+        #clear-canvas:hover {
+            background-color: #c82333;
+        }
+    </style>
+</head>
+<body>
+
+<h1>Simple Image Editor</h1>
+
+<div id="controls">
+    <input type="file" id="upload" accept="image/*">
+    <input type="text" id="text-input" placeholder="Enter your text here">
+    <button id="add-text">Add Text</button>
+    <button id="clear-canvas">Clear Canvas</button>
+    <button id="save-image">Save Image</button>
+</div>
+
+<canvas id="canvas" width="800" height="600"></canvas>
+
+<script>
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    const upload = document.getElementById('upload');
+    const textInput = document.getElementById('text-input');
+    const addTextButton = document.getElementById('add-text');
+    const clearButton = document.getElementById('clear-canvas');
+    const saveButton = document.getElementById('save-image');
+
+    let img = new Image();
+
+    upload.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            img.src = event.target.result;
+            img.onload = () => {
+                ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear existing canvas
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height); // Draw image to canvas
+            }
+        };
+        if (file) {
+            reader.readAsDataURL(file);
+        }
+    });
+
+    addTextButton.addEventListener('click', () => {
+        const text = textInput.value;
+        if (text) {
+            ctx.font = '30px Arial';
+            ctx.fillStyle = 'black';
+            ctx.fillText(text, 50, 50); // Draw the text on the canvas at position (50, 50)
+            textInput.value = ''; // Clear the input
+        }
+    });
+
+    clearButton.addEventListener('click', () => {
+        ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear the canvas
+    });
+
+    saveButton.addEventListener('click', () => {
+        const link = document.createElement('a');
+        link.download = 'edited-image.png';
+        link.href = canvas.toDataURL(); // Convert canvas content to data URL
+        link.click(); // Trigger download
+    });
+</script>
+
+</body>
+</html>
