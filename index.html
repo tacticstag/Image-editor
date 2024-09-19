@@ -133,6 +133,10 @@
 
     <button id="clear-canvas">Clear Canvas</button>
     <button id="save-image">Save Image</button>
+
+    <label>Image Quality:</label>
+    <button id="increase-quality">Increase Quality</button>
+    <button id="decrease-quality">Decrease Quality</button>
 </div>
 
 <canvas id="canvas" width="800" height="600"></canvas>
@@ -144,6 +148,7 @@
     let vhsEffect = false;
     let backgroundImage = null;
     let backgroundColor = '#ffffff'; // Default background color
+    let imageQuality = 1; // Quality factor for saving
 
     // Function to set the canvas background color
     function setBackgroundColor(color) {
@@ -191,7 +196,7 @@
         
         drawSelection() {
             ctx.strokeStyle = 'rgba(0, 123, 255, 0.5)';
-            ctx.strokeRect(this.x - 5, this.y - this.size + 10, ctx.measureText(this.text).width + 10, this.size + 5);
+            ctx.strokeRect(this.x - 5, this.y - this.size + 5, ctx.measureText(this.text).width + 10, this.size + 5);
         }
         
         isCursorOnText(mouseX, mouseY) {
@@ -201,12 +206,15 @@
     }
 
     function saveCanvas() {
-        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
         const tmpCanvas = document.createElement('canvas');
-        tmpCanvas.width = canvas.width;
-        tmpCanvas.height = canvas.height;
+        tmpCanvas.width = canvas.width * imageQuality;
+        tmpCanvas.height = canvas.height * imageQuality;
         const tmpCtx = tmpCanvas.getContext('2d');
-        tmpCtx.putImageData(imageData, 0, 0);
+
+        // Scale the original canvas to the temporary canvas
+        tmpCtx.scale(imageQuality, imageQuality);
+        tmpCtx.drawImage(canvas, 0, 0);
+
         return tmpCanvas.toDataURL('image/png');
     }
 
@@ -220,7 +228,7 @@
             const font = document.getElementById('font-select').value;
             texts.push(new TextObject(text, mousePos.x, mousePos.y, color, Number(size), font));
             document.getElementById('text-input').value = '';
-            redrawCanvas();
+            redrawCanvas(); // Ensure the canvas is redrawn with all elements
         }
     });
 
@@ -300,6 +308,19 @@
         link.click();
     });
 
+    // Increase/Decrease Quality 
+    document.getElementById('increase-quality').addEventListener('click', () => {
+        imageQuality += 0.1; // Increase quality
+        if (imageQuality > 3) imageQuality = 3; // Limit maximum quality
+        alert(`Image quality set to: ${imageQuality.toFixed(1)}x`);
+    });
+
+    document.getElementById('decrease-quality').addEventListener('click', () => {
+        imageQuality -= 0.1; // Decrease quality
+        if (imageQuality < 1) imageQuality = 1; // Limit minimum quality
+        alert(`Image quality set to: ${imageQuality.toFixed(1)}x`);
+    });
+
     // Helper Functions
     function getMousePos(canvas, evt) {
         const rect = canvas.getBoundingClientRect();
@@ -316,7 +337,7 @@
             ctx.drawImage(backgroundImage, 0, 0, canvas.width, canvas.height);
         }
         if (vhsEffect) {
-            ctx.filter = 'url(#vhs-effect)';
+            ctx.filter = 'none'; // Resetting filter for VHS effect if applicable
         }
         texts.forEach(textObj => textObj.draw());
         ctx.filter = 'none'; // Reset filter after drawing
