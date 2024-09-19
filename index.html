@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Image Editor</title>
+    <title>Enhanced Image Editor</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -29,7 +29,7 @@
             gap: 10px;
             margin-bottom: 20px;
         }
-        input[type="file"], input[type="text"] {
+        input[type="file"], input[type="text"], input[type="color"] {
             padding: 10px;
             border: 1px solid #ccc;
             border-radius: 5px;
@@ -61,16 +61,22 @@
         #clear-canvas:hover {
             background-color: #c82333;
         }
+        #gradient {
+            display: none;
+        }
     </style>
 </head>
 <body>
 
-<h1>Simple Image Editor</h1>
+<h1>Enhanced Image Editor</h1>
 
 <div id="controls">
-    <input type="file" id="upload" accept="image/*">
     <input type="text" id="text-input" placeholder="Enter your text here">
+    <input type="color" id="color-input" value="#000000"> <!-- For text color -->
     <button id="add-text">Add Text</button>
+    <input type="color" id="gradient-color1" value="#ff0000"> <!-- Gradient color 1 -->
+    <input type="color" id="gradient-color2" value="#0000ff"> <!-- Gradient color 2 -->
+    <button id="add-gradient">Add Gradient Text</button>
     <button id="clear-canvas">Clear Canvas</button>
     <button id="save-image">Save Image</button>
 </div>
@@ -80,40 +86,93 @@
 <script>
     const canvas = document.getElementById('canvas');
     const ctx = canvas.getContext('2d');
-    const upload = document.getElementById('upload');
     const textInput = document.getElementById('text-input');
+    const colorInput = document.getElementById('color-input');
     const addTextButton = document.getElementById('add-text');
+    const addGradientButton = document.getElementById('add-gradient');
     const clearButton = document.getElementById('clear-canvas');
     const saveButton = document.getElementById('save-image');
 
-    let img = new Image();
+    let texts = [];
+    let dragging = false;
+    let dragIndex = -1;
+    let offsetX, offsetY;
 
-    upload.addEventListener('change', (e) => {
-        const file = e.target.files[0];
-        const reader = new FileReader();
-        reader.onload = (event) => {
-            img.src = event.target.result;
-            img.onload = () => {
-                ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear existing canvas
-                ctx.drawImage(img, 0, 0, canvas.width, canvas.height); // Draw image to canvas
+    canvas.addEventListener('mousedown', (e) => {
+        const mousePos = getMousePos(canvas, e);
+        texts.forEach((textObj, index) => {
+            if (mousePos.x >= textObj.x && mousePos.x <= textObj.x + ctx.measureText(textObj.text).width &&
+                mousePos.y >= textObj.y - 30 && mousePos.y <= textObj.y) { // Adjusting for height
+                dragging = true;
+                dragIndex = index;
+                offsetX = mousePos.x - textObj.x;
+                offsetY = mousePos.y - textObj.y;
             }
-        };
-        if (file) {
-            reader.readAsDataURL(file);
+        });
+    });
+
+    canvas.addEventListener('mouseup', () => {
+        dragging = false;
+        dragIndex = -1;
+    });
+
+    canvas.addEventListener('mousemove', (e) => {
+        if (dragging && dragIndex > -1) {
+            const mousePos = getMousePos(canvas, e);
+            texts[dragIndex].x = mousePos.x - offsetX;
+            texts[dragIndex].y = mousePos.y - offsetY;
+            redrawCanvas();
         }
     });
+
+    function getMousePos(canvas, evt) {
+        const rect = canvas.getBoundingClientRect();
+        return {
+            x: evt.clientX - rect.left,
+            y: evt.clientY - rect.top
+        };
+    }
 
     addTextButton.addEventListener('click', () => {
         const text = textInput.value;
+        const color = colorInput.value;
         if (text) {
-            ctx.font = '30px Arial';
-            ctx.fillStyle = 'black';
-            ctx.fillText(text, 50, 50); // Draw the text on the canvas at position (50, 50)
+            texts.push({ text, x: 50, y: 50, color });
             textInput.value = ''; // Clear the input
+            redrawCanvas();
         }
     });
 
+    addGradientButton.addEventListener('click', () => {
+        const text = textInput.value;
+        const color1 = document.getElementById('gradient-color1').value;
+        const color2 = document.getElementById('gradient-color2').value;
+        if (text) {
+            const gradient = ctx.createLinearGradient(50, 50, 200, 50);
+            gradient.addColorStop(0, color1);
+            gradient.addColorStop(1, color2);
+            const gradientText = { text, x: 50, y: 100, gradient };
+            texts.push(gradientText);
+            textInput.value = ''; // Clear the input
+            redrawCanvas();
+        }
+    });
+
+    function redrawCanvas() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        texts.forEach(textObj => {
+            if (textObj.gradient) {
+                ctx.fillStyle = textObj.gradient;
+            } else {
+                ctx.fillStyle = textObj.color;
+            }
+            ctx.font = '30px Arial';
+            ctx.fillText(textObj.text, textObj.x, textObj.y); // Draw the text on the canvas
+        });
+    }
+
     clearButton.addEventListener('click', () => {
+        texts = []; // Clear all texts
         ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear the canvas
     });
 
