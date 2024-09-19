@@ -106,11 +106,12 @@
     let dragIndex = -1;
     let offsetX, offsetY;
 
+    // Mouse event handlers
     canvas.addEventListener('mousedown', (e) => {
         const mousePos = getMousePos(canvas, e);
         texts.forEach((textObj, index) => {
             if (mousePos.x >= textObj.x && mousePos.x <= textObj.x + ctx.measureText(textObj.text).width &&
-                mousePos.y >= textObj.y - textObj.size && mousePos.y <= textObj.y) { // Adjusting for height
+                mousePos.y >= textObj.y - textObj.size && mousePos.y <= textObj.y) {
                 dragging = true;
                 dragIndex = index;
                 offsetX = mousePos.x - textObj.x;
