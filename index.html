@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!D<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -28,6 +28,10 @@
             flex-direction: column;
             gap: 10px;
             margin-bottom: 20px;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
         }
         input[type="text"], input[type="color"], input[type="range"], select {
             padding: 10px;
@@ -49,17 +53,29 @@
         button:hover {
             background-color: #0056b3;
         }
-        #save-image {
-            background-color: #28a745;
+        .effect-select {
+            display: flex;
+            justify-content: space-around;
+            gap: 10px;
         }
-        #save-image:hover {
-            background-color: #218838;
+        /* Effect buttons */
+        #apply-effect {
+            background-color: #ffc107;
+        }
+        #apply-effect:hover {
+            background-color: #e0a800;
         }
         #clear-canvas {
             background-color: #dc3545;
         }
         #clear-canvas:hover {
             background-color: #c82333;
+        }
+        #save-image {
+            background-color: #28a745;
+        }
+        #save-image:hover {
+            background-color: #218838;
         }
     </style>
     <link href="https://fonts.googleapis.com/css2?family=Creepster&family=Montserrat:wght@700&family=Press+Start+2P&display=swap" rel="stylesheet">
@@ -82,14 +98,17 @@
     </select>
     <button id="add-text">Add Text</button>
     <button id="remove-text">Remove Selected Text</button>
-    <button id="add-bg">Add Background Behind Text</button>
-    <input type="color" id="bg-color-input" value="#ffffff"> <!-- Background color for text -->
-    <input type="color" id="gradient-color1" value="#ff0000"> <!-- Gradient color 1 -->
-    <input type="color" id="gradient-color2" value="#0000ff"> <!-- Gradient color 2 -->
-    <button id="add-gradient">Add Gradient Text</button>
-    <input type="color" id="bg-gradient-color1" value="#ffffff"> <!-- Background gradient color 1 -->
-    <input type="color" id="bg-gradient-color2" value="#000000"> <!-- Background gradient color 2 -->
-    <button id="add-bg-gradient">Set Background Gradient</button>
+
+    <div class="effect-select">
+        <button id="apply-effect">Apply Effect</button>
+        <select id="effect-select">
+            <option value="none">Choose an effect</option>
+            <option value="blackwhite">Black & White</option>
+            <option value="sepia">Sepia</option>
+            <option value="invert">Invert Colors</option>
+        </select>
+    </div>
+  
     <button id="clear-canvas">Clear Canvas</button>
     <button id="save-image">Save Image</button>
 </div>
@@ -99,50 +118,64 @@
 <script>
     const canvas = document.getElementById('canvas');
     const ctx = canvas.getContext('2d');
-    const textInput = document.getElementById('text-input');
-    const colorInput = document.getElementById('color-input');
-    const sizeInput = document.getElementById('size-input');
-    const fontSelect = document.getElementById('font-select');
-    const addTextButton = document.getElementById('add-text');
-    const removeTextButton = document.getElementById('remove-text');
-    const addBgButton = document.getElementById('add-bg');
-    const bgColorInput = document.getElementById('bg-color-input');
-    const addGradientButton = document.getElementById('add-gradient');
-    const clearButton = document.getElementById('clear-canvas');
-    const saveButton = document.getElementById('save-image');
-    const bgGradientColor1 = document.getElementById('bg-gradient-color1');
-    const bgGradientColor2 = document.getElementById('bg-gradient-color2');
-    const addBgGradientButton = document.getElementById('add-bg-gradient');
-
     let texts = [];
-    let dragging = false;
-    let dragIndex = -1;
-    let offsetX, offsetY;
+    
+    // Text Generation Class
+    class TextObject {
+        constructor(text, x, y, color, size, font) {
+            this.text = text;
+            this.x = x;
+            this.y = y;
+            this.color = color;
+            this.size = size;
+            this.font = font;
+            this.selected = false;
+        }
+        
+        draw() {
+            ctx.font = `${this.size}px ${this.font}`;
+            ctx.fillStyle = this.color;
+            ctx.fillText(this.text, this.x, this.y);
+            if (this.selected) {
+                this.drawSelection();
+            }
+        }
+        
+        drawSelection() {
+            ctx.strokeStyle = 'rgba(0, 123, 255, 0.5)';
+            ctx.strokeRect(this.x - 5, this.y - this.size + 10, ctx.measureText(this.text).width + 10, this.size + 5);
+        }
+    }
+    
+    let draggingText = null;
+    let dragOffset = { x: 0, y: 0 };
 
     // Mouse event handlers
     canvas.addEventListener('mousedown', (e) => {
         const mousePos = getMousePos(canvas, e);
-        texts.forEach((textObj, index) => {
-            if (mousePos.x >= textObj.x && mousePos.x <= textObj.x + ctx.measureText(textObj.text).width &&
+        texts.forEach(textObj => {
+            if (mousePos.x >= textObj.x - 5 && mousePos.x <= textObj.x + ctx.measureText(textObj.text).width + 5 &&
                 mousePos.y >= textObj.y - textObj.size && mousePos.y <= textObj.y) {
-                dragging = true;
-                dragIndex = index;
-                offsetX = mousePos.x - textObj.x;
-                offsetY = mousePos.y - textObj.y;
+                draggingText = textObj;
+                dragOffset.x = mousePos.x - textObj.x;
+                dragOffset.y = mousePos.y - textObj.y;
+                textObj.selected = true; // Highlight the selected text
+            } else {
+                textObj.selected = false; // Deselect other texts
             }
         });
+        redrawCanvas();
     });
 
     canvas.addEventListener('mouseup', () => {
-        dragging = false;
-        dragIndex = -1;
+        draggingText = null;
     });
 
     canvas.addEventListener('mousemove', (e) => {
-        if (dragging && dragIndex > -1) {
+        if (draggingText) {
             const mousePos = getMousePos(canvas, e);
-            texts[dragIndex].x = mousePos.x - offsetX;
-            texts[dragIndex].y = mousePos.y - offsetY;
+            draggingText.x = mousePos.x - dragOffset.x;
+            draggingText.y = mousePos.y - dragOffset.y;
             redrawCanvas();
         }
     });
@@ -155,74 +188,63 @@
         };
     }
 
-    addTextButton.addEventListener('click', () => {
-        const text = textInput.value;
-        const color = colorInput.value;
-        const size = sizeInput.value;
-        const font = fontSelect.value;
+    document.getElementById('add-text').addEventListener('click', () => {
+        const text = document.getElementById('text-input').value;
+        const color = document.getElementById('color-input').value;
+        const size = document.getElementById('size-input').value;
+        const font = document.getElementById('font-select').value;
         if (text) {
-            texts.push({ text, x: 50, y: 50, color, size: Number(size), font });
-            textInput.value = ''; // Clear the input
+            texts.push(new TextObject(text, 50, 50, color, Number(size), font));
+            document.getElementById('text-input').value = ''; // Clear the input
             redrawCanvas();
         }
     });
 
-    addBgButton.addEventListener('click', () => {
-        if (dragIndex > -1) {
-            const bgColor = bgColorInput.value;
-            texts[dragIndex].bgColor = bgColor;
-            redrawCanvas();
-        }
+    document.getElementById('remove-text').addEventListener('click', () => {
+        texts = texts.filter(text => !text.selected); // Remove selected text
+        redrawCanvas();
     });
 
-    addGradientButton.addEventListener('click', () => {
-        const text = textInput.value;
-        const color1 = document.getElementById('gradient-color1').value;
-        const color2 = document.getElementById('gradient-color2').value;
-        const size = sizeInput.value;
-        const font = fontSelect.value;
-        if (text) {
-            const gradient = ctx.createLinearGradient(50, 50, 200, 50);
-            gradient.addColorStop(0, color1);
-            gradient.addColorStop(1, color2);
-            const gradientText = { text, x: 50, y: 100, gradient, size: Number(size), font };
-            texts.push(gradientText);
-            textInput.value = ''; // Clear the input
-            redrawCanvas();
+    document.getElementById('apply-effect').addEventListener('click', () => {
+        const effect = document.getElementById('effect-select').value;
+        applyEffect(effect);
+    });
+
+    function applyEffect(effect) {
+        switch(effect) {
+            case 'blackwhite':
+                ctx.filter = 'grayscale(100%)';
+                break;
+            case 'sepia':
+                ctx.filter = 'sepia(100%)';
+                break;
+            case 'invert':
+                ctx.filter = 'invert(100%)';
+                break;
+            default:
+                ctx.filter = 'none';
+                break;
         }
+        redrawCanvas();
+        ctx.filter = 'none'; // Reset filter after applying
+    }
+
+    document.getElementById('clear-canvas').addEventListener('click', () => {
+        texts = [];
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+    });
+
+    document.getElementById('save-image').addEventListener('click', () => {
+        const link = document.createElement('a');
+        link.download = 'edited-image.png';
+        link.href = canvas.toDataURL();
+        link.click();
     });
 
     function redrawCanvas() {
-        ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear the canvas first
-        texts.forEach(textObj => {
-            if (textObj.bgColor) {
-                ctx.fillStyle = textObj.bgColor;
-                ctx.fillRect(textObj.x - 5, textObj.y - textObj.size + 10, ctx.measureText(textObj.text).width + 10, textObj.size + 5); // background behind text
-            }
-            ctx.fillStyle = textObj.gradient ? textObj.gradient : textObj.color;
-            ctx.font = `${textObj.size}px ${textObj.font}`;
-            ctx.fillText(textObj.text, textObj.x, textObj.y); // Draw the text on the canvas
-        });
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        texts.forEach(textObj => textObj.draw());
     }
-
-    removeTextButton.addEventListener('click', () => {
-        if (dragIndex > -1) {
-            texts.splice(dragIndex, 1); // Remove the selected text
-            redrawCanvas();
-        }
-    });
-
-    clearButton.addEventListener('click', () => {
-        texts = []; // Clear all texts
-        ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear the canvas
-    });
-
-    saveButton.addEventListener('click', () => {
-        const link = document.createElement('a');
-        link.download = 'edited-image.png';
-        link.href = canvas.toDataURL(); // Convert canvas content to data URL
-        link.click(); // Trigger download
-    });
 </script>
 
 </body>
