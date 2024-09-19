@@ -90,6 +90,14 @@
             background-color: #218838;
         }
 
+        #upload-image {
+            background-color: #17a2b8;
+        }
+
+        #upload-image:hover {
+            background-color: #138496;
+        }
+
         .selected {
             border: 2px dashed blue;
         }
@@ -141,7 +149,11 @@
     <label>
         <input type="checkbox" id="vhs-toggle"> Toggle VHS Effect
     </label>
-    
+
+    <input type="file" id="upload-image" accept="image/*">
+    <label for="background-color">Background Color:</label>
+    <input type="color" id="background-color" value="#ffffff">
+
     <button id="clear-canvas">Clear Canvas</button>
     <button id="save-image">Save Image</button>
 </div>
@@ -153,6 +165,28 @@
     const ctx = canvas.getContext('2d');
     let texts = [];
     let vhsEffect = false;
+
+    // Set canvas background color
+    function setBackgroundColor(color) {
+        ctx.fillStyle = color;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+    }
+
+    // Image upload functionality
+    document.getElementById('upload-image').addEventListener('change', (event) => {
+        const file = event.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = new Image();
+                img.onload = function() {
+                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height); // Stretch image to fill canvas
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+    });
 
     // Text Object Class Definition
     class TextObject {
@@ -264,10 +298,17 @@
         redrawCanvas(); // Redraw to apply/remove VHS effect
     });
 
+    // Set background color
+    document.getElementById('background-color').addEventListener('change', (e) => {
+        setBackgroundColor(e.target.value);
+        redrawCanvas();
+    });
+
     // Clear Canvas
     document.getElementById('clear-canvas').addEventListener('click', () => {
         texts = [];
         ctx.clearRect(0, 0, canvas.width, canvas.height);
+        setBackgroundColor('#ffffff'); // Reset to default background color
     });
 
     // Save Image
@@ -288,7 +329,9 @@
     }
 
     function redrawCanvas() {
+        const backgroundColor = document.getElementById('background-color').value;
         ctx.clearRect(0, 0, canvas.width, canvas.height);
+        setBackgroundColor(backgroundColor); // Set background color
         if (vhsEffect) {
             ctx.filter = 'url(#vhs-effect)';
         } else {
